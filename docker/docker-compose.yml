@@ -1,0 +1,47 @@
+services:
+
+  nginx:
+    build: nginx
+    container_name: pp-nginx
+    platform: linux/arm64/v8
+    depends_on:
+      - php
+    ports:
+      - target: 80
+        published: 8080
+        protocol: tcp
+        mode: host
+
+  php:
+    build: php
+    platform: linux/arm64/v8
+    container_name: pp-php
+    depends_on:
+      - postgres
+    volumes:
+      - ../project/:/var/www/html/
+
+  postgres:
+    image: postgres:alpine3.15
+    platform: linux/arm64/v8
+    container_name: pp-postgres
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+        mode: host
+    environment:
+      POSTGRES_USER: alga
+      POSTGRES_PASSWORD: letmein
+
+  adminer:
+    image: adminer
+    platform: linux/arm64/v8
+    container_name: pp-adminer
+    depends_on:
+      - postgres
+    ports:
+      - target: 8080
+        published: 8085
+        protocol: tcp
+        mode: host
