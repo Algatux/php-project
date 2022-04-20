@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace App\Entity;
 
@@ -14,7 +14,13 @@ class Transaction
     private $id;
 
     #[ORM\Column(type: 'string', length: 3)]
-    private $type;
+    private string $type;
+
+    #[ORM\Column(type: 'text')]
+    private string $motivation;
+
+    #[ORM\Column(type: 'decimal', scale: 2)]
+    private float $amount;
 
     public function getId(): ?int
     {
@@ -31,5 +37,25 @@ class Transaction
         $this->type = $type;
 
         return $this;
+    }
+
+    public function getMotivation(): string|null
+    {
+        return $this->motivation;
+    }
+
+    public function setMotivation(string $motivation): void
+    {
+        $this->motivation = $motivation;
+    }
+
+    public function getAmount(): float|null
+    {
+        return $this->amount;
+    }
+
+    public function setAmount(float $amount): void
+    {
+        $this->amount = $amount;
     }
 }

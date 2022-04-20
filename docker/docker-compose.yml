@@ -1,9 +1,8 @@
-services:
+ services:
 
   nginx:
     build: nginx
     container_name: pp-nginx
-    platform: linux/arm64/v8
     depends_on:
       - php
     ports:
@@ -14,16 +13,23 @@ services:
 
   php:
     build: php
-    platform: linux/arm64/v8
     container_name: pp-php
     depends_on:
       - postgres
     volumes:
       - ../project/:/var/www/html/
 
+  redis:
+    image: redis
+    container_name: pp-redis
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+        mode: host
+
   postgres:
     image: postgres:alpine3.15
-    platform: linux/arm64/v8
     container_name: pp-postgres
     ports:
       - target: 5432
@@ -36,7 +42,6 @@ services:
 
   adminer:
     image: adminer
-    platform: linux/arm64/v8
     container_name: pp-adminer
     depends_on:
       - postgres
