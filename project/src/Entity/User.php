@@ -3,8 +3,10 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use JetBrains\PhpStorm\Internal\TentativeType;
+use JetBrains\PhpStorm\ArrayShape;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
@@ -17,16 +19,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, \JsonSe
     #[ORM\Column(type: 'uuid',unique:true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    private $id;
+    private Uuid $id;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
-    private $email;
+    private string $email;
 
     #[ORM\Column(type: 'json')]
-    private $roles = [];
+    private array $roles = [];
 
     #[ORM\Column(type: 'string')]
-    private $password;
+    private string $password;
+
+    #[ORM\OneToMany(mappedBy: "user", targetEntity: Transaction::class)]
+    private Collection $transactions;
+
+    public function __construct()
+    {
+        $this->transactions = new ArrayCollection();
+    }
 
     public function getId(): ?Uuid
     {
@@ -98,7 +108,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, \JsonSe
         // $this->plainPassword = null;
     }
 
-    public function jsonSerialize()
+    public function getTransactions(): Collection
+    {
+        return $this->transactions;
+    }
+
+    #[ArrayShape(['id' => "null|\Symfony\Component\Uid\Uuid", 'email' => "null|string"])]
+    public function jsonSerialize(): array
     {
         return [
             'id' => $this->getId(),

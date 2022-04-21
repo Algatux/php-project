@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\TransferType;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -16,8 +17,8 @@ class Transaction
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
     private $id;
 
-    #[ORM\Column(type: 'string', length: 3)]
-    private string $type;
+    #[ORM\Column(type: 'string', enumType: TransferType::class)]
+    private TransferType $type;
 
     #[ORM\Column(type: 'text')]
     private string $motivation;
@@ -25,17 +26,32 @@ class Transaction
     #[ORM\Column(type: 'decimal', scale: 2)]
     private float $amount;
 
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "transactions")]
+    private User $user;
+
+    #[ORM\Column(
+        type: 'datetime_immutable',
+        columnDefinition: 'timestamp default current_timestamp not null'
+    )]
+    private \DateTimeInterface $timestamp;
+
+    public function __construct()
+    {
+        $this->type = TransferType::OUT;
+        $this->timestamp = new \DateTimeImmutable();
+    }
+
     public function getId(): ?Uuid
     {
         return $this->id;
     }
 
-    public function getType(): ?string
+    public function getType(): ?TransferType
     {
         return $this->type;
     }
 
-    public function setType(string $type): self
+    public function setType(TransferType $type): self
     {
         $this->type = $type;
 
@@ -60,5 +76,20 @@ class Transaction
     public function setAmount(float $amount): void
     {
         $this->amount = $amount;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(User $user): void
+    {
+        $this->user = $user;
+    }
+
+    public function getTimestamp(): \DateTimeImmutable|\DateTimeInterface
+    {
+        return $this->timestamp;
     }
 }
