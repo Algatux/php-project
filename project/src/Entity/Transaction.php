@@ -4,13 +4,16 @@ namespace App\Entity;
 
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
+#[ORM\Table(name: '`transaction`')]
 class Transaction
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'uuid', unique:true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
     private $id;
 
     #[ORM\Column(type: 'string', length: 3)]
@@ -22,7 +25,7 @@ class Transaction
     #[ORM\Column(type: 'decimal', scale: 2)]
     private float $amount;
 
-    public function getId(): ?int
+    public function getId(): ?Uuid
     {
         return $this->id;
     }
