@@ -33,9 +33,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, \JsonSe
     #[ORM\OneToMany(mappedBy: "user", targetEntity: Transaction::class)]
     private Collection $transactions;
 
+    #[ORM\ManyToMany(targetEntity: Wallet::class, inversedBy: 'users')]
+    private Collection $wallets;
+
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
+        $this->wallets = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -113,6 +117,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, \JsonSe
         return $this->transactions;
     }
 
+    public function addWallet(Wallet $wallet): void
+    {
+        if (false === $this->wallets->contains($wallet)) {
+            $this->wallets->add($wallet);
+            $wallet->addUser($this);
+        }
+    }
+
     #[ArrayShape(['id' => "null|\Symfony\Component\Uid\Uuid", 'email' => "null|string"])]
     public function jsonSerialize(): array
     {
@@ -121,4 +133,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, \JsonSe
             'email' => $this->getEmail()
         ];
     }
+
+
 }

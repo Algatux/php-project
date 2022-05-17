@@ -2,41 +2,64 @@
 
 namespace App\Controller;
 
-use App\Entity\Transaction;
 use App\Entity\User;
-use App\Enum\TransferType;
+use App\Entity\Wallet;
+use App\Model\Request\TransactionCreate;
+use App\Repository\TransactionRepository;
+use App\Service\RequestMapper;
+use App\Service\RequestModelValidator;
+use App\Service\TransactionPersister;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route(path: 'api')]
 class TransactionController extends AbstractController
 {
-    #[Route('/transaction', name: 'app_transaction')]
-    public function index(): Response
+    public function __construct(
+        private readonly RequestMapper $requestMapper,
+        private readonly RequestModelValidator $modelValidator
+    )
     {
-        return $this->render('transaction/index.html.twig', [
-            'controller_name' => 'TransactionController',
-        ]);
     }
 
-    #[Route('/transaction/create', name: 'app_transaction_create')]
-    public function create(EntityManagerInterface $entityManager): Response
+    #[Route('/transaction', name: 'app_transaction')]
+    public function index(TransactionRepository $repository): JsonResponse
     {
-        $repo = $entityManager->getRepository(User::class);
+        return new JsonResponse($repository->findAll());
+    }
 
-        $user = $repo->findOneBy(['email' => 'a.galli85@gmail.com']);
+    #[Route('/transaction/create', name: 'app_transaction_create', methods: 'POST')]
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        TransactionPersister $transactionPersister
+    ): Response
+    {
+        $userRepo = $entityManager->getRepository(User::class);
+        $walletRepo = $entityManager->getRepository(Wallet::class);
 
-        $transaction = new Transaction();
-        $transaction->setAmount(100.00);
-        $transaction->setMotivation('test');
-        $transaction->setType(TransferType::IN);
-        $transaction->setUser($user);
+        $entityManager->beginTransaction();
+        try {
+            $requestModel = new TransactionCreate();
+            $this->requestMapper->mapJsonRequest($request, $requestModel);
+            $this->modelValidator->validate($requestModel);
 
-        $entityManager->persist($transaction);
-        $entityManager->flush();
+            $user = $userRepo->findOneBy(['id' => $requestModel->user]);
+            $wallet = $walletRepo->findOneBy(['id' => $requestModel->wallet]);
 
-        return new JsonResponse([]);
+            $transaction = $transactionPersister->create($requestModel->amount, $requestModel->motivation, $user, $wallet);
+
+            $entityManager->commit();
+        } catch (\Exception $e) {
+            $entityManager->rollback();
+            $entityManager->close();
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
+
+        return new JsonResponse(['id' => $transaction->getId()], 201);
     }
 }

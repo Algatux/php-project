@@ -3,19 +3,21 @@
 namespace App\Entity;
 
 use App\Enum\TransferType;
+use App\Model\Formatter\Date as DateFormatter;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use JetBrains\PhpStorm\ArrayShape;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
 #[ORM\Table(name: '`transaction`')]
-class Transaction
+class Transaction implements \JsonSerializable
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique:true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    private $id;
+    private Uuid $id;
 
     #[ORM\Column(type: 'string', enumType: TransferType::class)]
     private TransferType $type;
@@ -25,6 +27,10 @@ class Transaction
 
     #[ORM\Column(type: 'decimal', scale: 2)]
     private float $amount;
+
+    #[ORM\ManyToOne(targetEntity: Wallet::class, inversedBy: 'transactions')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Wallet $wallet;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "transactions")]
     private User $user;
@@ -91,5 +97,34 @@ class Transaction
     public function getTimestamp(): \DateTimeImmutable|\DateTimeInterface
     {
         return $this->timestamp;
+    }
+
+    public function setTimestamp(\DateTimeImmutable|\DateTimeInterface $timestamp): void
+    {
+        $this->timestamp = $timestamp;
+    }
+
+    public function getWallet(): ?Wallet
+    {
+        return $this->wallet;
+    }
+
+    public function setWallet(Wallet $wallet): void
+    {
+        $this->wallet = $wallet;
+    }
+
+    #[ArrayShape(['id' => "null|\Symfony\Component\Uid\Uuid", 'wallet_id' => "null|\Symfony\Component\Uid\Uuid", 'type' => "\App\Enum\TransferType|null", 'motivation' => "null|string", 'amount' => "float|null", 'user' => "null|\Symfony\Component\Uid\Uuid", 'timestamp' => "\App\Model\Formatter\Date"])]
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->getId(),
+            'wallet_id' => $this->wallet->getId(),
+            'type' => $this->getType(),
+            'motivation' => $this->getMotivation(),
+            'amount' => $this->getAmount(),
+            'user' => $this->user->getId(),
+            'timestamp' => new DateFormatter($this->getTimestamp())
+        ];
     }
 }
